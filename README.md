@@ -1,67 +1,33 @@
 # Vintage Resale MCP
 
-MCP server for vintage resale — inventory search, pricing comps, listing management, and passive market signal collection.
+A production-ready MCP server that gives any AI model (Claude, ChatGPT, etc.) tools for a vintage resale marketplace — inventory search, price comps, listings, and passive market signal collection. Built on [mcp-saas-template](https://github.com/Bbadhub/mcp-saas-template) with billing, Stripe, and a data flywheel baked in.
 
 ---
 
-## Start Here — Run the Onboarding Session
+## Getting Started — Paste This Into Your Claude Code CLI
 
-Before touching any code, run the interactive onboarding. It will teach you how this system works, why it was built this way, and help you figure out exactly what to change for your use case.
-
-**You need:** [Claude Code CLI](https://claude.ai/claude-code) installed, or any Claude chat session.
-
-### Option A — Claude Code CLI (recommended)
-
-```bash
-# Clone the repo
-git clone https://github.com/Bbadhub/vintage-resale-mcp.git
-cd vintage-resale-mcp
-
-# Run the onboarding session
-claude --print "$(cat ONBOARDING_SESSION.md)"
-```
-
-Or launch an interactive session with the prompt pre-loaded:
-
-```bash
-claude -p "$(sed -n '/^---$/,$ p' ONBOARDING_SESSION.md | tail -n +3)"
-```
-
-### Option B — Claude.ai Chat
-
-1. Open [claude.ai](https://claude.ai)
-2. Open `ONBOARDING_SESSION.md` in any text editor
-3. Copy everything **below** the second `---` divider (the system prompt)
-4. Paste it into a new Claude conversation
-5. Claude will start asking you questions — answer honestly, it adapts to your use case
-
-### Option C — Cursor / VS Code
-
-Open this repo in Cursor or VS Code with a Claude extension, then in the AI chat:
+Open your terminal and paste this single prompt into Claude Code. It will clone the repo, read the codebase, and walk you through an interactive onboarding session — teaching you what everything does, why it was built that way, and how to adapt it for your use case.
 
 ```
-Please read ONBOARDING_SESSION.md and run the onboarding session with me, starting from Question 1.
+Clone the repo at https://github.com/Bbadhub/vintage-resale-mcp into a local folder, then read ONBOARDING_SESSION.md and run the interactive onboarding session with me starting from Question 1. Do not skip ahead — ask one question at a time and wait for my answer before continuing.
 ```
+
+That's it. Claude Code will handle the clone and guide you through the rest.
 
 ---
 
-## What the Onboarding Covers
+## What This Is
 
-The session walks you through 6 questions. After each answer, you get:
+An MCP server is a tool server for AI models. Instead of a human clicking a button, an AI model calls your tools directly — search inventory, check prices, create listings — and speaks the results back to the user in natural language.
 
-- **Chain of Thought** — why the code is built the way it is, not just what it does
-- **Scenarios** — concrete examples of data flowing through the system
-- **Your action plan** — by the end, you know exactly what files to change for your domain
+This repo gives you:
 
-Topics covered:
-1. Your problem and how MCP tools solve it (`server.py`, `tools/`)
-2. What user data is worth collecting (`middleware/signal_capture.py`)
-3. How to charge for the service (`billing.py`)
-4. When web enrichment makes tools significantly better (`middleware/serper_connector.py`)
-5. How to scale signals across multiple servers (`middleware/sync.py`)
-6. Mapping YOUR domain tools to this template structure
-
-Full reference doc (non-interactive): [ONBOARDING.md](ONBOARDING.md)
+- **8 domain tools** — search, get item, price comps, trending, create/update/mark sold, seller stats
+- **Data flywheel** — every tool call passively captures signals (search terms, sold prices) that make future results smarter
+- **Serper enrichment** — price comp tools are silently enriched with live eBay/Etsy data via Google SERP
+- **Billing** — API keys, free tier, Stripe metering, affiliate commissions, rate limiting
+- **Deploy stack** — Docker Compose, Fly.io, Railway, one-command ops script
+- **Interactive onboarding** — guided session that teaches the codebase and helps you find your own use case
 
 ---
 
@@ -69,59 +35,36 @@ Full reference doc (non-interactive): [ONBOARDING.md](ONBOARDING.md)
 
 ```
 vintage-resale-mcp/
-├── server.py                  # MCP protocol server (SSE + stdio)
+├── server.py                  # MCP protocol (SSE + stdio), middleware chain
 ├── billing.py                 # API keys, Stripe, rate limits, affiliates
-├── config.py                  # All env vars loaded in one place
-├── requirements.txt           # Python dependencies
-├── Dockerfile                 # Container build
-├── docker-compose.yml         # Local + production stack
-├── deploy.sh                  # One-script ops: setup, start, logs, deploy
-├── .env.example               # Every config var with explanations
-│
+├── config.py                  # All env vars in one place
 ├── tools/
-│   ├── __init__.py            # Aggregates ALL_TOOLS + ALL_HANDLERS
-│   ├── resale.py              # The 8 vintage resale domain tools
-│   └── example.py            # Template reference tools (echo, hello_world)
-│
+│   ├── resale.py              # The 8 domain tools
+│   └── example.py            # Template reference (echo, hello_world)
 ├── middleware/
-│   ├── signal_capture.py      # Passive data collection on every tool call
+│   ├── signal_capture.py      # Passive data collection on every call
 │   ├── serper_connector.py    # Google SERP enrichment, cached 24hr
 │   ├── session_manager.py     # Session state across tool calls
-│   └── sync.py               # Two-way sync engine (the data flywheel)
-│
-├── site/
-│   └── index.html             # Landing page + API signup flow
-│
-├── strategy/
-│   ├── competitor_analysis.py # Pricing benchmark generator
-│   └── *.example.json         # Competitor + pricing policy templates
-│
-├── prompts/
-│   └── *.md                   # AI system prompts for sales/install/support
-│
-├── ONBOARDING.md              # Full reference doc (engineer + AI agent)
-└── ONBOARDING_SESSION.md      # Interactive onboarding prompt (start here)
+│   └── sync.py               # Two-way sync engine
+├── site/index.html            # Landing page + API signup
+├── strategy/                  # Competitive pricing analysis tools
+├── prompts/                   # AI system prompts for sales/support
+├── ONBOARDING.md              # Full reference doc
+└── ONBOARDING_SESSION.md      # Interactive onboarding (the prompt above runs this)
 ```
 
 ---
 
-## Quick Start (after onboarding)
+## Quick Setup (after onboarding)
 
 ```bash
-# 1. Configure
-cp .env.example .env
-# Edit .env — minimum required: nothing (runs in dev mode with billing disabled)
-
-# 2. Install dependencies
+cp .env.example .env          # copy config template
 pip install -r requirements.txt
-
-# 3. Start
 ./deploy.sh setup
 ./deploy.sh start
 
-# 4. Verify
-curl http://localhost:8100/health
-curl http://localhost:8100/consumer/tools
+curl http://localhost:8100/health         # verify running
+curl http://localhost:8100/consumer/tools # list all tools
 ```
 
 ---
@@ -130,47 +73,46 @@ curl http://localhost:8100/consumer/tools
 
 | Tool | What it does | Signal captured |
 |------|-------------|----------------|
-| `search_inventory` | Search items by keyword, category, price, condition | Search term (demand signal) |
+| `search_inventory` | Search by keyword, category, price, condition | Search term (demand signal) |
 | `get_item` | Full item details by ID | Item view |
 | `get_price_comps` | Comparable sold prices + suggested range (Serper-enriched) | Price research intent |
 | `trending_now` | Top searches from real signal data | Reads signals, writes none |
-| `create_listing` | Add a new item to inventory | New supply signal |
+| `create_listing` | Add a new item | New supply signal |
 | `update_listing` | Edit price, description, status | Inventory change |
-| `mark_sold` | Mark item sold at actual price | **Most valuable signal** |
+| `mark_sold` | Mark item sold at actual price | Most valuable signal |
 | `seller_stats` | Performance dashboard for a seller | Reads signals |
 
-`mark_sold` is free to call by design — every actual sold price that enters the system improves future price comps for everyone.
+`mark_sold` is free to call by design. Every actual sold price that enters the system makes future price comps better for everyone.
 
 ---
 
 ## Key Config (`.env`)
 
 ```bash
-# Minimum to run (dev mode)
 SERVER_PORT=8100
 
-# Turn on billing when ready
+# Billing (off by default for dev)
 BILLING_ENABLED=true
 STRIPE_SECRET_KEY=sk_live_...
 STRIPE_PRICE_ID=price_...
 FREE_TIER_CALLS=100
 
-# Add Serper for web-enriched price comps
+# Web enrichment for price comps
 SERPER_API_KEY=your-serper-key
 SERPER_TOOLS=get_price_comps,search_inventory
 
-# Add sync endpoint to share signals across servers
+# Share signals across servers
 SYNC_ENDPOINT=https://your-central-store.com
 ```
 
-Full config reference: [ONBOARDING.md — Configuration Reference](ONBOARDING.md#7-configuration-reference)
+Full config reference in [ONBOARDING.md](ONBOARDING.md#7-configuration-reference).
 
 ---
 
-## Extend with Your Own Tools
+## Add Your Own Tools
 
 ```python
-# In tools/resale.py — add a new tool definition
+# tools/resale.py — add a definition
 MY_TOOL = {
     "name": "my_tool",
     "description": "What the AI sees when deciding whether to call this",
@@ -202,10 +144,10 @@ HANDLERS = {..., "my_tool": handle_my_tool}
 ## Deploy
 
 ```bash
-./deploy.sh start      # Local Docker Compose
+./deploy.sh start      # Docker Compose (local or VPS)
 ./deploy.sh fly        # Fly.io
-./deploy.sh railway    # Railway (fastest setup)
-./deploy.sh benchmark  # Run competitive pricing analysis
+./deploy.sh railway    # Railway (fastest)
+./deploy.sh benchmark  # Competitive pricing analysis
 ./deploy.sh logs       # Tail logs
 ```
 
